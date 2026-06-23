@@ -1,0 +1,13 @@
+[Unit]
+Description=PRO X TKL reactive lighting (press-echo)
+After=graphical-session.target
+
+[Service]
+# Adjust the path if you move the project.
+WorkingDirectory=%h/proxtkl-lights
+ExecStart=/usr/bin/python3 -m proxtkl run
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target

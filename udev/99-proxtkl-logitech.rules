@@ -1,0 +1,18 @@
+# Installed by proxtkl-lights.
+# Grants the seated (active) user raw HID access to Logitech receivers/devices,
+# which proxtkl needs to send HID++ lighting commands. Replaces Solaar's
+# 42-logitech-unify-permissions.rules after the solaar package is removed.
+
+ACTION=="remove", GOTO="proxtkl_end"
+SUBSYSTEM!="hidraw", GOTO="proxtkl_end"
+
+# USB-connected Logitech receivers and devices
+ATTRS{idVendor}=="046d", GOTO="proxtkl_apply"
+# Bluetooth-connected Logitech devices
+KERNELS=="0005:046D:*", GOTO="proxtkl_apply"
+GOTO="proxtkl_end"
+
+LABEL="proxtkl_apply"
+TAG+="uaccess"
+
+LABEL="proxtkl_end"

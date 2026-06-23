@@ -1,0 +1,41 @@
+# ── Python bytecode / caches ─────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ── Packaging / build artifacts ──────────────────────────────────────────────
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+
+# ── Virtual environments ─────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ── Editor / IDE ─────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── OS cruft ─────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Runtime / local junk ─────────────────────────────────────────────────────
+*.log
+*.tmp
+
+# Preserved original of the stubbed-out diversion module (reference only, unused)
+proxtkl/_vendor/logitech_receiver/diversion_full.py.disabled
+
+# Note: proxtkl/_vendor/ IS intentionally committed — the vendored
+# logitech_receiver + hidapi make the app standalone (no `solaar` package needed).
