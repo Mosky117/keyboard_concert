@@ -1,7 +1,7 @@
 """Register the app with the desktop: generate an icon, write a .desktop launcher
 so it shows in the app menu / favorites / taskbar, and refresh the caches.
 
-The window's WM_CLASS is 'Proxtkl' (set in gui.main), matched by StartupWMClass
+The window's WM_CLASS is 'Keyboard_concert' (set in gui.main), matched by StartupWMClass
 so the running window groups under this icon in the dash/taskbar.
 """
 
@@ -15,8 +15,8 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-APP_ID = "proxtkl"
-WM_CLASS = "Proxtkl"
+APP_ID = "keyboard_concert"
+WM_CLASS = "Keyboard_concert"
 ICON_SIZES = (48, 64, 128, 256)
 
 
@@ -84,10 +84,10 @@ def _desktop_contents() -> str:
     return (
         "[Desktop Entry]\n"
         "Type=Application\n"
-        "Name=PRO X TKL Lighting\n"
+        "Name=Keyboard Concert\n"
         "GenericName=Keyboard Lighting\n"
-        "Comment=Reactive per-key lighting for the Logitech PRO X TKL\n"
-        f"Exec={sys.executable} -m proxtkl gui\n"
+        "Comment=Reactive per-key keyboard lighting\n"
+        f"Exec={sys.executable} -m keyboard_concert gui\n"
         f"Path={project_dir()}\n"
         f"Icon={icon_path if not _has_themed_icon() else APP_ID}\n"
         "Terminal=false\n"

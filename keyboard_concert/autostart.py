@@ -1,6 +1,6 @@
 """Manage 'launch at login' via an XDG autostart entry.
 
-At login the desktop launches `proxtkl gui --autostart`, which starts the sync on
+At login the desktop launches `keyboard_concert gui --autostart`, which starts the sync on
 the last-used profile and tucks the window into the system tray — one process
 that both drives the lighting and lets you tweak it live (no separate daemon).
 
@@ -19,8 +19,10 @@ from pathlib import Path
 
 from . import desktopentry
 
-AUTOSTART_NAME = "proxtkl-lights.desktop"
+AUTOSTART_NAME = "keyboard_concert.desktop"
+# Legacy names from the old "proxtkl" version, cleaned up on enable/disable.
 _OLD_SERVICE = "proxtkl-lights.service"
+_OLD_AUTOSTART = "proxtkl-lights.desktop"
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -41,15 +43,15 @@ def autostart_path() -> Path:
 
 
 def _desktop_contents() -> str:
-    # Path= sets the working dir so `-m proxtkl` resolves; recomputed every
+    # Path= sets the working dir so `-m keyboard_concert` resolves; recomputed every
     # enable(), so moving the project folder just needs a re-enable (or the
     # GUI re-asserts it on launch — see ensure_current()).
     return (
         "[Desktop Entry]\n"
         "Type=Application\n"
-        "Name=PRO X TKL Lighting\n"
+        "Name=Keyboard Concert\n"
         "Comment=Reactive per-key lighting — starts the sync at login\n"
-        f"Exec={sys.executable} -m proxtkl gui --autostart\n"
+        f"Exec={sys.executable} -m keyboard_concert gui --autostart\n"
         f"Path={project_dir()}\n"
         f"Icon={desktopentry.APP_ID}\n"
         "Terminal=false\n"
@@ -70,7 +72,8 @@ def is_enabled() -> bool:
 
 
 def _remove_old_service():
-    """Tear down the legacy systemd --user service if a previous version left one."""
+    """Tear down legacy autostart from the old 'proxtkl' version: the systemd
+    --user service and the old XDG autostart entry."""
     try:
         subprocess.run(["systemctl", "--user", "disable", "--now", _OLD_SERVICE],
                        capture_output=True)
@@ -80,6 +83,9 @@ def _remove_old_service():
     unit = Path(base) / "systemd" / "user" / _OLD_SERVICE
     if unit.exists():
         unit.unlink()
+    old_autostart = _autostart_dir() / _OLD_AUTOSTART
+    if old_autostart.exists():
+        old_autostart.unlink()
     try:
         subprocess.run(["systemctl", "--user", "daemon-reload"], capture_output=True)
     except FileNotFoundError:

@@ -70,7 +70,7 @@ class Tray:
 
     def _run(self):
         ind = _AppIndicator.Indicator.new(
-            "proxtkl-lights", self.icon_name,
+            "keyboard_concert-lights", self.icon_name,
             _AppIndicator.IndicatorCategory.APPLICATION_STATUS)
         ind.set_status(_AppIndicator.IndicatorStatus.ACTIVE)
         try:

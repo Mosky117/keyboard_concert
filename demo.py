@@ -4,9 +4,9 @@ Simulates pressing G, T, A, E, S staggered ~0.5s apart and lets them fade.
 Watch the keyboard: each should flash green and melt back to violet over 3s.
 """
 import time
-from proxtkl.device import open_keyboard, PerKey
-from proxtkl.effects import EchoEffect
-from proxtkl.engine import Engine
+from keyboard_concert.device import open_keyboard, PerKey
+from keyboard_concert.effects import EchoEffect
+from keyboard_concert.engine import Engine
 
 dev = open_keyboard()
 pk = PerKey(dev)

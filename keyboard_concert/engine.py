@@ -23,19 +23,26 @@ from .keymap import EVDEV_TO_LED
 #  Input device discovery
 # ════════════════════════════════════════════════════════════════════════════
 
-def find_keyboard_inputs(name_substr: str) -> List[InputDevice]:
-    """All evdev nodes that look like this keyboard and emit letter keys."""
-    found = []
+def find_keyboard_inputs(name_substr: str = "") -> List[InputDevice]:
+    """evdev keyboard nodes for the target keyboard. Prefers nodes whose name
+    matches `name_substr`; falls back to any Logitech keyboard that emits letters
+    (so it works without knowing the exact model)."""
+    matched, logitech = [], []
+    sub = (name_substr or "").lower()
     for path in list_devices():
         try:
             dev = InputDevice(path)
         except Exception:
             continue
         caps = dev.capabilities()
-        has_keys = ecodes.EV_KEY in caps and ecodes.KEY_A in caps[ecodes.EV_KEY]
-        if has_keys and name_substr.lower() in (dev.name or "").lower():
-            found.append(dev)
-    return found
+        if not (ecodes.EV_KEY in caps and ecodes.KEY_A in caps[ecodes.EV_KEY]):
+            continue
+        nm = (dev.name or "").lower()
+        if sub and sub in nm:
+            matched.append(dev)
+        elif "logitech" in nm:
+            logitech.append(dev)
+    return matched or logitech
 
 
 # ════════════════════════════════════════════════════════════════════════════

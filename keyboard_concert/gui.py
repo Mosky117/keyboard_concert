@@ -1,4 +1,4 @@
-"""Tkinter control panel for PRO X TKL lighting.
+"""Tkinter control panel for Keyboard Concert lighting.
 
 Left: live effect controls (colors, fade, fps, effect). Right: profiles you can
 save and cycle with a hotkey, plus a 'launch at login' toggle. Changes apply live
@@ -49,7 +49,7 @@ class App:
     def __init__(self, root: tk.Tk, autostart_mode: bool = False):
         self.root = root
         self._autostart_mode = autostart_mode
-        root.title("PRO X TKL Lighting")
+        root.title("Keyboard Concert")
         root.resizable(False, False)
         self.pal = theme_mod.apply(root)
 
@@ -105,8 +105,10 @@ class App:
         header.columnconfigure(1, weight=1)
         ttk.Label(header, text="●", foreground=pal["accent"],
                   font=("", 16)).grid(row=0, column=0, sticky="w")
-        ttk.Label(header, text="PRO X TKL Lighting", style="Header.TLabel").grid(
-            row=0, column=1, sticky="w", padx=(8, 0))
+        # show the keyboard's own name (live device name; falls back to config)
+        self.title_lbl = ttk.Label(header, text=(self.cfg.get("device") or "Keyboard Concert"),
+                                   style="Header.TLabel")
+        self.title_lbl.grid(row=0, column=1, sticky="w", padx=(8, 0))
         self.battery_lbl = ttk.Label(header, text="Battery: —", style="MutedBg.TLabel")
         self.battery_lbl.grid(row=0, column=2, sticky="e")
 
@@ -291,11 +293,20 @@ class App:
     def _ensure_device(self):
         if self.pk is None:
             self.pk = PerKey(open_keyboard(self.cfg["device"]))
+            self._update_header_name()
         return self.pk
+
+    def _update_header_name(self):
+        """Put the keyboard's actual name in the header once it's connected."""
+        try:
+            name = getattr(self.pk.dev, "name", None) if self.pk else None
+        except Exception:
+            name = None
+        self.title_lbl.configure(text=name or self.cfg.get("device") or "Keyboard Concert")
 
     def _start_engine(self):
         pk = self._ensure_device()
-        inputs = find_keyboard_inputs(self.cfg["device"])
+        inputs = find_keyboard_inputs(getattr(pk.dev, "name", "") or self.cfg.get("device", ""))
         if not inputs:
             raise KeyboardNotFound("no keyboard input device found (/dev/input/event*)")
         self._sync_cfg_from_controls()
@@ -331,7 +342,7 @@ class App:
         try:
             self._stop_engine() if self.engine else self._start_engine()
         except Exception as e:
-            messagebox.showerror("PRO X TKL", str(e))
+            messagebox.showerror("Keyboard Concert", str(e))
             self._stop_engine()
 
     def _solid(self):
@@ -340,7 +351,7 @@ class App:
             self._ensure_device().fill(self.bg)
             self._set_status(f"solid {_hex(self.bg)}")
         except Exception as e:
-            messagebox.showerror("PRO X TKL", str(e))
+            messagebox.showerror("Keyboard Concert", str(e))
 
     def _off(self):
         try:
@@ -348,7 +359,7 @@ class App:
             self._ensure_device().fill(0x000000)
             self._set_status("off")
         except Exception as e:
-            messagebox.showerror("PRO X TKL", str(e))
+            messagebox.showerror("Keyboard Concert", str(e))
 
     def _save(self):
         self._sync_cfg_from_controls()
@@ -410,12 +421,13 @@ class App:
 
     def _record_hotkey(self):
         try:
-            inputs = find_keyboard_inputs(self.cfg["device"])
+            kbd = getattr(self.pk.dev, "name", "") if self.pk else ""
+            inputs = find_keyboard_inputs(kbd or self.cfg.get("device", ""))
         except Exception as e:
-            messagebox.showerror("PRO X TKL", str(e))
+            messagebox.showerror("Keyboard Concert", str(e))
             return
         if not inputs:
-            messagebox.showerror("PRO X TKL", "no keyboard input device found")
+            messagebox.showerror("Keyboard Concert", "no keyboard input device found")
             return
         self.record_btn.configure(state="disabled")
         self._set_status("press the key combo now… (Fn won't register)", self.pal["amber"])
@@ -447,7 +459,7 @@ class App:
             self._stop_engine()
         ok, msg = (autostart.enable() if want else autostart.disable())
         if not ok:
-            messagebox.showerror("PRO X TKL", f"systemctl failed:\n{msg}")
+            messagebox.showerror("Keyboard Concert", f"systemctl failed:\n{msg}")
             self.autostart_var.set(autostart.is_enabled())
             return
         self._set_status("launch at login: ON" if want else "launch at login: OFF")
@@ -480,7 +492,7 @@ class App:
         try:
             icon = desktopentry.ensure_icons()
             self.tray = tray_mod.Tray(
-                icon, "PRO X TKL Lighting",
+                icon, "Keyboard Concert",
                 on_show=lambda: self._post(self._show_window),
                 on_hide=lambda: self._post(self.root.withdraw),
                 on_quit=lambda: self._post(self._quit),
@@ -556,7 +568,7 @@ class App:
 # ════════════════════════════════════════════════════════════════════════════
 
 def main(autostart=False):
-    root = tk.Tk(className="proxtkl")  # WM_CLASS=Proxtkl, matches StartupWMClass
+    root = tk.Tk(className="keyboard_concert")  # WM_CLASS=Keyboard_concert, matches StartupWMClass
     try:
         root._tkl_icon = ImageTk.PhotoImage(desktopentry.icon_image(128))
         root.iconphoto(True, root._tkl_icon)

@@ -1,4 +1,4 @@
-"""Map Linux evdev key codes -> PRO X TKL LED indices (feature 0x8081).
+"""Map Linux evdev key codes -> Keyboard Concert LED indices (feature 0x8081).
 
 evdev reports presses as KEY_* codes; the lighting controller addresses LEDs by
 logitech_receiver's sequential KEYCODES index (A=1, B=2, ...). We bridge the two

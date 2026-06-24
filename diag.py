@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Minimal diagnostic: can we stage one color + commit? Reports per-step result."""
 import sys
-from proxtkl.device import PerKey, open_keyboard, rgb_to_int
+from keyboard_concert.device import PerKey, open_keyboard, rgb_to_int
 
 dev = open_keyboard()
 pk = PerKey(dev)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Latency probe for PRO X TKL per-key lighting.
+"""Latency probe for Keyboard Concert per-key lighting.
 
 Answers the only question that matters before building a reactive effect:
 how fast can we push per-key color frames over Lightspeed? Reactive press-echo
@@ -13,7 +13,7 @@ then print timing stats and a verdict.
 import statistics
 import time
 
-from proxtkl.device import PerKey, open_keyboard, rgb_to_int
+from keyboard_concert.device import PerKey, open_keyboard, rgb_to_int
 
 VIOLET = rgb_to_int("8A2BE2")
 GREEN = rgb_to_int("00FF00")

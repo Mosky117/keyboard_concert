@@ -1,4 +1,4 @@
-"""Open the PRO X TKL and drive its per-key lighting (HID++ feature 0x8081).
+"""Open the keyboard and drive its per-key lighting (HID++ feature 0x8081).
 
 Protocol (mirrors logitech_receiver's PerKeyLighting setting):
   fn 0x00  -> read key bitmap (which key indices exist), 3 pages (0,1,2)
@@ -19,6 +19,7 @@ import time
 from typing import Dict, Iterable, List, Mapping, Optional
 
 from logitech_receiver import base
+from logitech_receiver import device as _device
 from logitech_receiver import receiver as _receiver
 
 
@@ -29,7 +30,7 @@ from logitech_receiver import receiver as _receiver
 PER_KEY_LIGHTING_V2 = 0x8081
 RGB_EFFECTS = 0x8071
 
-DEFAULT_NAME = "PRO X TKL"
+DEFAULT_NAME = ""  # empty = auto-detect any per-key-lighting Logitech keyboard
 
 
 class KeyboardNotFound(RuntimeError):
@@ -40,30 +41,61 @@ class KeyboardNotFound(RuntimeError):
 #  Finding & opening the keyboard
 # ════════════════════════════════════════════════════════════════════════════
 
-def open_keyboard(name: str = DEFAULT_NAME, max_slots: int = 6):
-    """Find the named device behind any attached Logitech receiver and return it
-    online with its HID++ feature table loaded."""
-    name_l = name.lower()
-    for dev_info in base.receivers():
-        recv = _receiver.create_receiver(base, dev_info)
-        if not recv:
+def _candidate_devices(max_slots: int):
+    """Yield HID++ devices from both receivers and directly-attached (wired)
+    Logitech devices."""
+    for dev_info in base.receivers_and_devices():
+        try:
+            if getattr(dev_info, "isDevice", False):
+                dev = _device.create_device(base, dev_info)
+                if dev is not None:
+                    yield dev
+            else:
+                recv = _receiver.create_receiver(base, dev_info)
+                if not recv:
+                    continue
+                limit = int(getattr(recv, "max_devices", None) or max_slots)
+                for slot in range(1, limit + 1):
+                    try:
+                        dev = recv[slot]
+                    except Exception:
+                        dev = None
+                    if dev is not None:
+                        yield dev
+        except Exception:
             continue
-        for slot in range(1, max_slots + 1):
-            try:
-                dev = recv[slot]
-            except Exception:
-                dev = None
-            if dev is None:
-                continue
+
+
+def open_keyboard(name: str = DEFAULT_NAME, max_slots: int = 6):
+    """Return an online Logitech keyboard that supports per-key lighting (0x8081),
+    with its HID++ feature table loaded.
+
+    Auto-detects by default — picks the first connected device that has per-key
+    lighting (works wired or via a receiver). If `name` is a non-empty substring,
+    a keyboard whose name matches is preferred (useful with more than one)."""
+    name_l = (name or "").lower()
+    fallback = None
+    for dev in _candidate_devices(max_slots):
+        try:
             dev.ping()
-            if dev.online and name_l in (dev.name or "").lower():
-                _ = dev.features  # force-load the feature index table
-                if PER_KEY_LIGHTING_V2 not in dev.features:
-                    raise KeyboardNotFound(
-                        f"'{dev.name}' found but it has no per-key lighting (0x8081)"
-                    )
-                return dev
-    raise KeyboardNotFound(f"no online device matching '{name}' behind a receiver")
+            if not dev.online:
+                continue
+            if PER_KEY_LIGHTING_V2 not in dev.features:  # force-loads the feature table
+                continue
+        except Exception:
+            continue
+        if not name_l:
+            return dev            # auto-detect: first per-key-lighting keyboard
+        if name_l in (dev.name or "").lower():
+            return dev            # preferred name match
+        if fallback is None:
+            fallback = dev        # remember in case no name matches
+    if fallback is not None:
+        return fallback
+    raise KeyboardNotFound(
+        "no Logitech keyboard with per-key lighting (0x8081) found"
+        + (f" matching '{name}'" if name_l else "")
+        + " — is it connected and powered on?")
 
 
 # ════════════════════════════════════════════════════════════════════════════

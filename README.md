@@ -1,108 +1,111 @@
-# proxtkl-lights
+# Keyboard Concert
 
-Reactive per-key lighting for the **Logitech G PRO X TKL** on Linux — the
-press-echo effect G HUB offers on Windows, where keys flash a color and fade
-back to the background. Built on Solaar's `logitech_receiver` library (HID++
-feature `0x8081`) plus `evdev` for key events.
+Reactive per-key lighting for **Logitech keyboards** on Linux — the press-echo
+effect G HUB offers on Windows, where each key flashes a color and fades back to
+the background. Built on Solaar's `logitech_receiver` library (HID++ feature
+`0x8081`) plus `evdev` for key events. No Windows, no G HUB, no Solaar app needed.
 
-## Requirements
-- `python3`, `python3-evdev`, `python3-pillow`, plus `python3-pyudev` and
-  `python3-hid-parser`.
-- The `logitech_receiver` and `hidapi` libraries are **vendored** under
-  `proxtkl/_vendor/`, so the system **`solaar` package is not required**.
-- Device access: a udev rule (`udev/99-proxtkl-logitech.rules`) grants the active
-  user raw HID access to the Logitech receiver; evdev access is granted by
-  systemd-logind. Install the rule with:
-  ```bash
-  sudo cp udev/99-proxtkl-logitech.rules /etc/udev/rules.d/
-  sudo udevadm control --reload-rules && sudo udevadm trigger --action=add
-  ```
-  (Not needed while Solaar's own udev rule is still installed.)
+It **auto-detects** any connected Logitech keyboard that supports per-key lighting
+(`0x8081`) — wired or via a receiver — so there's usually nothing to configure.
 
-## Graphical control panel
+> Works only with **Logitech** keyboards that have per-key RGB (PRO X TKL, G915,
+> G815, G513, …). Not Razer/Corsair/etc. — those use different protocols (see
+> [OpenRGB](https://openrgb.org)).
+
+## Install
+
+**1. Install the dependencies** (the `logitech_receiver` + `hidapi` libraries are
+vendored, so you do *not* need the `solaar` package):
+
 ```bash
-python3 -m proxtkl gui
-```
-Pick the background and press colors (native color picker), set the fade time and
-frame rate, and switch effects. **Start** runs the reactive engine; colors and
-fade update **live** while it runs. **Save** writes the choices to the config the
-CLI also uses. (tkinter — runs under Wayland via XWayland.)
+# Fedora / Nobara
+sudo dnf install python3 python3-tkinter python3-evdev python3-pillow python3-pyudev python3-hid-parser
 
-The panel also has:
-- **Profiles** — *Save current…* stores the current colors/fade/effect as a named
-  profile; *Apply* or double-click switches to one. The **cycle hotkey** advances
-  to the next profile while the engine runs.
-- **Record hotkey** — press the key combo you want (e.g. Right-Ctrl + Right-Shift
-  + L) and it's captured. Note: the **Fn key is firmware-only and never reaches
-  Linux**, so it can't be part of a hotkey — pick a normal-key combo.
-- **Launch at login** — toggles a `systemd --user` service so the reactive effect
-  starts automatically (no manual systemctl needed).
-- **Close to tray (X)** — when on, the window's X button hides the app into the
-  **system tray** (the status area by the clock/volume) instead of quitting;
-  click the tray icon → *Show* to bring it back, *Quit* to exit. Uses
-  AppIndicator/StatusNotifierItem (native in KDE; on GNOME needs the AppIndicator
-  extension). If no tray is available it falls back to a normal minimize.
-- **Color picker** — a 2D saturation/brightness square plus a hue strip (with a
-  hex field), instead of separate R/G/B sliders.
-- **Battery** — the keyboard's charge level/status is shown in the System box and
-  on the tray icon's hover tooltip (read from HID++ `0x1004`, refreshed each
-  minute). Device access is serialized with the lighting writes via a lock.
+# Debian / Ubuntu
+sudo apt install python3 python3-tk python3-evdev python3-pil python3-pyudev python3-hid-parser
 
-### App menu entry (optional)
-The GUI no longer has a button for this; use the CLI if you want the launcher/icon
-in your application grid:
-```bash
-python3 -m proxtkl install-desktop              # add launcher + icon
-python3 -m proxtkl install-desktop --uninstall  # remove
+# Arch
+sudo pacman -S python python-evdev python-pillow python-pyudev python-hid-parser tk
 ```
 
-## Use (CLI)
+**2. Get the code:**
 ```bash
-cd ~/proxtkl-lights
-
-python3 -m proxtkl gui            # graphical control panel
-python3 -m proxtkl run            # start the reactive echo (violet bg, green press, 3s fade)
-python3 -m proxtkl run --bg 101030 --press-color ff3030 --fade 2 --fps 45
-python3 -m proxtkl fill 8A2BE2    # set a solid color and exit
-python3 -m proxtkl off            # lights off
-python3 -m proxtkl list-effects   # available animations
+git clone <your-repo-url> keyboard_concert
+cd keyboard_concert
 ```
 
-### Config (`~/.config/proxtkl/config.json`)
+**3. Allow device access** (one-time udev rule granting your user raw HID access
+to the keyboard). *Skip this if you still have the `solaar` package installed — its
+own rule already covers it.*
 ```bash
-python3 -m proxtkl config                       # show current
-python3 -m proxtkl config set background 1a0033
-python3 -m proxtkl config set press_color 00ffaa
-python3 -m proxtkl config set fade_seconds 2.5
-python3 -m proxtkl config set effect echo
+sudo cp udev/99-keyboard_concert-logitech.rules /etc/udev/rules.d/
+sudo udevadm control --reload-rules && sudo udevadm trigger --action=add
 ```
-CLI flags on `run` override the saved config for that run.
+(Replug the keyboard/receiver once if access still fails.)
 
-## Run in the background (like G HUB)
-Reactive effects can't live in onboard memory — a program must run while you use
-the keyboard. Autostart it as a user service:
+**That's it.** Run `python3 -m keyboard_concert gui`, create your profiles, and
+optionally tick *Launch at login*.
+
+## Quick start
+
 ```bash
-mkdir -p ~/.config/systemd/user
-cp proxtkl-lights.service ~/.config/systemd/user/
-systemctl --user daemon-reload
-systemctl --user enable --now proxtkl-lights.service
-systemctl --user status proxtkl-lights.service   # check it
+python3 -m keyboard_concert gui
 ```
-Stop/disable: `systemctl --user disable --now proxtkl-lights.service`.
+- Pick **background** and **press** colors (2D color picker), set **fade** time and
+  **frame rate**, choose an **effect**. **Start** runs the reactive engine; colors
+  and fade update **live** while it runs.
+- **Profiles** — *Save current…* stores the colors/fade/effect under a name;
+  *Apply* / double-click switches. The selection is remembered across restarts.
+- **Cycle hotkey** — *Record hotkey* captures a key combo (e.g. Right-Ctrl +
+  Right-Shift + L) that cycles profiles while running. (The **Fn** key is
+  firmware-only and never reaches Linux, so it can't be used.)
+- **Launch at login** — starts the app at login (in the tray) and resumes your
+  last profile automatically. See below.
+- **Close to tray (X)** — the window's X hides to the **system tray** instead of
+  quitting (native in KDE; on GNOME needs the AppIndicator extension; otherwise
+  falls back to a normal minimize). Tray menu shows **battery** and Show/Quit.
+
+## Launch at login
+
+Tick **Launch at login** in the GUI's System box. It installs an XDG autostart
+entry (`~/.config/autostart/keyboard_concert.desktop`) that, at login, starts the
+sync on your last profile and tucks the window into the tray — one process, no
+separate daemon. Untick to remove it.
+
+The app-menu launcher + icon is added automatically; to (re)install it manually:
+```bash
+python3 -m keyboard_concert install-desktop              # add launcher + icon
+python3 -m keyboard_concert install-desktop --uninstall  # remove
+```
+
+## CLI
+
+```bash
+python3 -m keyboard_concert gui            # graphical control panel
+python3 -m keyboard_concert run            # start the reactive effect (headless)
+python3 -m keyboard_concert run --bg 101030 --press-color ff3030 --fade 2 --fps 45
+python3 -m keyboard_concert fill 8A2BE2    # set a solid color and exit
+python3 -m keyboard_concert off            # lights off
+python3 -m keyboard_concert list-effects   # available animations
+python3 -m keyboard_concert config         # show config; `config set <key> <value>` to change
+```
+Config lives at `~/.config/keyboard_concert/config.json`. Set `device` to a name
+substring (e.g. `G915`) only if you have more than one per-key Logitech keyboard;
+otherwise leave it empty for auto-detect.
 
 ## Notes
-- **Persistence:** while the tool runs you get violet + echo. On exit it leaves a
-  solid background. After a full power-cycle with nothing running, the keyboard
-  falls back to its onboard profile (set via Solaar or G HUB). This is inherent
-  to reactive effects, not a limitation of this tool.
-- **Solaar** is no longer required (its `logitech_receiver`/`hidapi` libraries are
-  vendored). If you still have Solaar installed it can run alongside; it only
-  writes lighting on setting changes, so it won't fight the live effect.
-- **Latency:** measured ~7 ms per frame over Lightspeed (~140 fps headroom), and
-  recoloring many keys costs the same as one, so 30–60 fps is comfortable.
+
+- **Persistence:** while the tool runs you get your background + echo. On exit it
+  leaves a solid background; after a power-cycle with nothing running, the keyboard
+  reverts to its onboard profile. This is inherent to reactive effects.
+- **After sleep:** the keyboard turns its LEDs off on long inactivity; the first
+  keypress after waking automatically repaints the background.
+- **Solaar** is not required (its libraries are vendored). If installed it can run
+  alongside; it only writes on setting changes, so it won't fight the live effect.
+- **Lightweight:** ~0 % CPU idle, <1 % while typing, ~75 MB RAM with the GUI.
 
 ## Add a new animation
-Edit `proxtkl/effects.py`, subclass `Effect`, decorate with `@register`:
+Edit `keyboard_concert/effects.py`, subclass `Effect`, decorate with `@register`:
 ```python
 @register
 class RippleEffect(Effect):
@@ -115,11 +118,12 @@ It's immediately available as `--effect ripple`. The engine handles device I/O,
 diffing and frame pacing; effects only decide colors.
 
 ## Files
-- `proxtkl/device.py` — open the keyboard, stage/commit per-key colors (0x8081)
-- `proxtkl/keymap.py` — evdev keycode → LED index
-- `proxtkl/effects.py` — effect registry (`static`, `echo`)
-- `proxtkl/engine.py` — evdev read loop + frame rendering
-- `proxtkl/config.py`, `proxtkl/cli.py` — config + CLI
+- `keyboard_concert/device.py` — find/open the keyboard, stage/commit colors (0x8081)
+- `keyboard_concert/keymap.py` — evdev keycode → LED index
+- `keyboard_concert/effects.py` — effect registry (`static`, `echo`)
+- `keyboard_concert/engine.py` — evdev read loop + frame rendering
+- `keyboard_concert/{config,cli,gui,tray,autostart,desktopentry,theme}.py`
+- `keyboard_concert/_vendor/` — bundled `logitech_receiver` + `hidapi` (GPL-2.0)
 - `probe.py` — latency probe · `demo.py` — no-keypress hardware demo
 
 ## License
@@ -137,4 +141,4 @@ PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 This project vendors the `logitech_receiver` and `hidapi` libraries from
 [Solaar](https://github.com/pwr-Solaar/Solaar) (GPL-2.0-or-later) under
-`proxtkl/_vendor/`, which is why the project is licensed under the GPL.
+`keyboard_concert/_vendor/`, which is why the project is licensed under the GPL.

@@ -1,12 +1,12 @@
-"""Command-line interface for PRO X TKL lighting.
+"""Command-line interface for Keyboard Concert lighting.
 
-  proxtkl run                 # start the reactive effect (uses saved config)
-  proxtkl run --bg 200030 --press-color ff0000 --fade 2 --effect echo
-  proxtkl fill <color>        # set a solid color and exit
-  proxtkl off                 # turn lighting off and exit
-  proxtkl list-effects        # show available animations
-  proxtkl config              # show current config + path
-  proxtkl config set <key> <value>
+  keyboard_concert run                 # start the reactive effect (uses saved config)
+  keyboard_concert run --bg 200030 --press-color ff0000 --fade 2 --effect echo
+  keyboard_concert fill <color>        # set a solid color and exit
+  keyboard_concert off                 # turn lighting off and exit
+  keyboard_concert list-effects        # show available animations
+  keyboard_concert config              # show current config + path
+  keyboard_concert config set <key> <value>
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ def _open(name):
     try:
         return open_keyboard(name)
     except KeyboardNotFound as e:
-        sys.exit(f"proxtkl: {e}")
+        sys.exit(f"keyboard_concert: {e}")
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -44,10 +44,10 @@ def cmd_run(args, cfg):
     if _profiles:
         _idx = int(cfg.get("active_profile", 0)) % len(_profiles)
         cfgmod.apply_profile(cfg, _profiles[_idx])
-        print(f"proxtkl: starting on profile '{_profiles[_idx].get('name', '?')}'")
+        print(f"keyboard_concert: starting on profile '{_profiles[_idx].get('name', '?')}'")
     effect_name = args.effect or cfg["effect"]
     if effect_name not in EFFECTS:
-        sys.exit(f"proxtkl: unknown effect '{effect_name}' (have: {', '.join(EFFECTS)})")
+        sys.exit(f"keyboard_concert: unknown effect '{effect_name}' (have: {', '.join(EFFECTS)})")
     # working values (CLI flags override config; config carries the active profile)
     cfg["effect"] = effect_name
     if args.bg is not None:
@@ -62,9 +62,9 @@ def cmd_run(args, cfg):
     dev = _open(name)
     pk = PerKey(dev)
     effect = make_effect(cfg)
-    inputs = find_keyboard_inputs(name)
+    inputs = find_keyboard_inputs(getattr(dev, "name", "") or name)
     if not inputs:
-        sys.exit(f"proxtkl: no input device found for '{name}' "
+        sys.exit(f"keyboard_concert: no input device found for '{name}' "
                  f"(need read access to /dev/input/event*; try the input group)")
 
     profiles = cfg.get("profiles") or []
@@ -72,34 +72,34 @@ def cmd_run(args, cfg):
     engine = Engine(pk, effect, inputs, fps=int(cfg["fps"]), hotkey=hotkey)
 
     def announce(prof):
-        print(f"proxtkl: → profile '{prof.get('name', '?')}'  "
+        print(f"keyboard_concert: → profile '{prof.get('name', '?')}'  "
               f"bg=#{rgb_to_int(cfg['background']):06X} press=#{rgb_to_int(cfg['press_color']):06X} "
               f"fade={cfg['fade_seconds']}s")
     if profiles:
         engine.on_cycle = ProfileCycler(engine, cfg, on_applied=announce).cycle
 
-    print(f"proxtkl: effect={cfg['effect']} bg=#{rgb_to_int(cfg['background']):06X} "
+    print(f"keyboard_concert: effect={cfg['effect']} bg=#{rgb_to_int(cfg['background']):06X} "
           f"press=#{rgb_to_int(cfg['press_color']):06X} fade={cfg['fade_seconds']}s fps={cfg['fps']}")
     if profiles:
-        print(f"proxtkl: {len(profiles)} profile(s); cycle with "
+        print(f"keyboard_concert: {len(profiles)} profile(s); cycle with "
               f"{' + '.join(cfg['cycle_hotkey'])}")
-    print(f"proxtkl: reading {', '.join(d.path for d in inputs)} — Ctrl-C to stop")
+    print(f"keyboard_concert: reading {', '.join(d.path for d in inputs)} — Ctrl-C to stop")
     try:
         engine.run()
     except KeyboardInterrupt:
-        print("\nproxtkl: stopped")
+        print("\nkeyboard_concert: stopped")
 
 
 def cmd_fill(args, cfg):
     pk = PerKey(_open(args.device or cfg["device"]))
     pk.fill(rgb_to_int(args.color))
-    print(f"proxtkl: filled #{rgb_to_int(args.color):06X}")
+    print(f"keyboard_concert: filled #{rgb_to_int(args.color):06X}")
 
 
 def cmd_off(args, cfg):
     pk = PerKey(_open(args.device or cfg["device"]))
     pk.fill(0x000000)
-    print("proxtkl: lights off")
+    print("keyboard_concert: lights off")
 
 
 def cmd_gui(args, cfg):
@@ -111,10 +111,10 @@ def cmd_install_desktop(args, cfg):
     from . import desktopentry
     if args.uninstall:
         desktopentry.uninstall()
-        print("proxtkl: removed desktop launcher + icons")
+        print("keyboard_concert: removed desktop launcher + icons")
     else:
         path = desktopentry.install()
-        print(f"proxtkl: installed {path}\n  → find 'PRO X TKL Lighting' in your app menu")
+        print(f"keyboard_concert: installed {path}\n  → find 'Keyboard Concert' in your app menu")
 
 
 def cmd_list_effects(args, cfg):
@@ -126,7 +126,7 @@ def cmd_config(args, cfg):
     if args.action == "set":
         key, value = args.key, args.value
         if key not in cfgmod.DEFAULTS:
-            sys.exit(f"proxtkl: unknown config key '{key}' (have: {', '.join(cfgmod.DEFAULTS)})")
+            sys.exit(f"keyboard_concert: unknown config key '{key}' (have: {', '.join(cfgmod.DEFAULTS)})")
         # keep numeric types for numeric keys
         if isinstance(cfgmod.DEFAULTS[key], bool):
             value = value.lower() in ("1", "true", "yes", "on")
@@ -136,7 +136,7 @@ def cmd_config(args, cfg):
             value = float(value)
         cfg[key] = value
         path = cfgmod.save(cfg)
-        print(f"proxtkl: set {key} = {value}  ({path})")
+        print(f"keyboard_concert: set {key} = {value}  ({path})")
     else:
         print(f"# {cfgmod.config_path()}")
         for k, v in cfg.items():
@@ -148,7 +148,7 @@ def cmd_config(args, cfg):
 # ════════════════════════════════════════════════════════════════════════════
 
 def build_parser():
-    p = argparse.ArgumentParser(prog="proxtkl", description="Logitech PRO X TKL lighting")
+    p = argparse.ArgumentParser(prog="keyboard_concert", description="Keyboard Concert — reactive keyboard lighting")
     p.add_argument("--device", help="device name substring (default from config)")
     sub = p.add_subparsers(dest="cmd", required=True)
 

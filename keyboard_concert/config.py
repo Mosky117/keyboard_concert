@@ -1,4 +1,4 @@
-"""Persistent config at ~/.config/proxtkl/config.json (override with $PROXTKL_CONFIG).
+"""Persistent config at ~/.config/keyboard_concert/config.json (override with $KEYBOARD_CONCERT_CONFIG).
 Colors are stored as hex strings ('8A2BE2'); everything is plain JSON so it's
 trivial to hand-edit."""
 
@@ -16,7 +16,9 @@ from pathlib import Path
 PROFILE_FIELDS = ("effect", "background", "press_color", "fade_seconds", "fps")
 
 DEFAULTS = {
-    "device": "PRO X TKL",
+    # Keyboard name hint; empty = auto-detect any per-key-lighting Logitech board.
+    # Set a substring (e.g. "G915") only if you have more than one such keyboard.
+    "device": "",
     "effect": "echo",
     "background": "8A2BE2",   # violet
     "press_color": "00FF00",  # green
@@ -56,11 +58,11 @@ def apply_profile(cfg: dict, prof: dict) -> None:
 # ════════════════════════════════════════════════════════════════════════════
 
 def config_path() -> Path:
-    env = os.environ.get("PROXTKL_CONFIG")
+    env = os.environ.get("KEYBOARD_CONCERT_CONFIG")
     if env:
         return Path(env)
     base = os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")
-    return Path(base) / "proxtkl" / "config.json"
+    return Path(base) / "keyboard_concert" / "config.json"
 
 
 def load() -> dict:
