@@ -18,7 +18,7 @@ It **auto-detects** any connected Logitech keyboard that supports per-key lighti
 vendored, so you do *not* need the `solaar` package):
 
 ```bash
-# Fedora / Nobara
+# Fedora
 sudo dnf install python3 python3-tkinter python3-evdev python3-pillow python3-pyudev python3-hid-parser
 
 # Debian / Ubuntu
