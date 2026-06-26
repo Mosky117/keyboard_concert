@@ -212,7 +212,9 @@ class App:
         return "#000000" if (0.299 * r + 0.587 * g + 0.114 * b) > 140 else "#FFFFFF"
 
     def _update_press_enabled(self):
-        state = "normal" if self.effect_var.get() == "echo" else "disabled"
+        # Both echo and wave use the press color + fade/period; only the plain
+        # static fill uses neither.
+        state = "disabled" if self.effect_var.get() == "static" else "normal"
         self.press_swatch.configure(state=state)
         self.fade_scale.configure(state=state)
 

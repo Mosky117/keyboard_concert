@@ -120,7 +120,7 @@ diffing and frame pacing; effects only decide colors.
 ## Files
 - `keyboard_concert/device.py` — find/open the keyboard, stage/commit colors (0x8081)
 - `keyboard_concert/keymap.py` — evdev keycode → LED index
-- `keyboard_concert/effects.py` — effect registry (`static`, `echo`)
+- `keyboard_concert/effects.py` — effect registry (`static`, `echo`, `wave`)
 - `keyboard_concert/engine.py` — evdev read loop + frame rendering
 - `keyboard_concert/{config,cli,gui,tray,autostart,desktopentry,theme}.py`
 - `keyboard_concert/_vendor/` — bundled `logitech_receiver` + `hidapi` (GPL-2.0)
